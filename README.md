@@ -4,13 +4,13 @@ A modern, minimalistic and secure file sharing app with end-to-end encryption. B
 
 ## Features ✨
 
-- 🔐 **End-to-End Encryption** – Files are encrypted in the browser before upload, ensuring only the recipient can decrypt them.
+- 🔐 **End-to-End Encryption** – Client-side file encryption, ensuring only the recipient can decrypt them.
+- 🔑 **Password-based** – Encrypt and Decrypt files with custom password
 - ⚡ **No Sign-Up Required** – Share files instantly without creating an account.
 - 📁 **Cloud-agnostic** – Self-host it or simply deploy it to a Cloud Provider.
 - 🧩 **Minimalistic Design** – Clean, fast, and intuitive interface built with React and TypeScript.
 - 🐳 **Containerized** – Easily deployable backend and frontend with Docker.
 - 🛡️ **Privacy-First** – No tracking, no logs. Built with user privacy at its core.
-- 🔄 **One-Time Downloads** – Option to make files self-destruct after a single download.
 - ⏳ **Expiration Support** – Set time-based expiration for shared files.
 
 
