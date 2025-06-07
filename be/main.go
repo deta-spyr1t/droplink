@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
-	"strconv"
 )
 
 const (
@@ -26,106 +24,6 @@ const (
 type UploadResponse struct {
 	DownloadURL string `json:"download_url"`
 	Hash        string `json:"hash"`
-}
-
-func uploadChunkHandler(w http.ResponseWriter, r *http.Request) {
-	fileID := r.URL.Query().Get("fileID")
-	chunkStr := r.URL.Query().Get("chunk")
-	ivB64 := r.URL.Query().Get("iv")
-
-	if fileID == "" || chunkStr == "" || ivB64 == "" {
-		http.Error(w, "missing parameters", http.StatusBadRequest)
-		return
-	}
-
-	chunkNum, err := strconv.Atoi(chunkStr)
-	if err != nil {
-		http.Error(w, "invalid chunk number", http.StatusBadRequest)
-		return
-	}
-
-	_, err = base64.StdEncoding.DecodeString(ivB64)
-	if err != nil {
-		http.Error(w, "invalid IV encoding", http.StatusBadRequest)
-		return
-	}
-
-	chunkData, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "failed to read chunk data", http.StatusInternalServerError)
-		return
-	}
-
-	chunkDir := filepath.Join(uploadDir, "chunks", fileID)
-	err = os.MkdirAll(chunkDir, 0700)
-	if err != nil {
-		http.Error(w, "failed to create chunk dir", http.StatusInternalServerError)
-		return
-	}
-
-	chunkFile := fmt.Sprintf("chunk-%06d.enc", chunkNum)
-	chunkPath := filepath.Join(chunkDir, chunkFile)
-
-	err = os.WriteFile(chunkPath, chunkData, 0600)
-	if err != nil {
-		http.Error(w, "failed to save chunk", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func uploadFinalizeHandler(w http.ResponseWriter, r *http.Request) {
-	fileID := r.URL.Query().Get("fileID")
-	if fileID == "" {
-		http.Error(w, "missing fileID", http.StatusBadRequest)
-		return
-	}
-
-	chunkDir := filepath.Join(uploadDir, "chunks", fileID)
-	files, err := os.ReadDir(chunkDir)
-	if err != nil {
-		http.Error(w, "failed to read chunks", http.StatusInternalServerError)
-		return
-	}
-
-	sort.Slice(files, func(i, j int) bool {
-		return files[i].Name() < files[j].Name()
-	})
-
-	finalFilePath := filepath.Join(publicDir, fileID+".enc")
-	finalFile, err := os.Create(finalFilePath)
-	if err != nil {
-		http.Error(w, "failed to create output file", http.StatusInternalServerError)
-		return
-	}
-	defer finalFile.Close()
-
-	hasher := sha256.New()
-
-	for _, f := range files {
-		chunkPath := filepath.Join(chunkDir, f.Name())
-		chunkData, err := os.ReadFile(chunkPath)
-		if err != nil {
-			http.Error(w, "failed to read chunk", http.StatusInternalServerError)
-			return
-		}
-
-		finalFile.Write(chunkData)
-		hasher.Write(chunkData)
-	}
-
-	os.RemoveAll(chunkDir)
-
-	fileHash := hex.EncodeToString(hasher.Sum(nil))
-	downloadURL := fmt.Sprintf("http://%s/download/%s.enc", r.Host, fileID)
-
-	resp := map[string]string{
-		"downloadLink": downloadURL,
-		"fileHash":     fileHash,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
