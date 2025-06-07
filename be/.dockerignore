@@ -1,0 +1,9 @@
+# Ignore files and folders that shouldn't be in the image
+/uploads
+*.log
+.env
+.git
+.vscode
+.idea
+*.swp
+*.swo
