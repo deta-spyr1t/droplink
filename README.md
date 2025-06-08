@@ -16,8 +16,10 @@ A modern, minimalistic and secure file sharing app with end-to-end encryption. B
 ## Components
 
 ### Backend (Docker/Golang) 🖥️
+TBD
 
 ### Frontend (Docker/Typescript) 🧑‍💻
+TBD
 
 ## File structure 🗂️
 ```
