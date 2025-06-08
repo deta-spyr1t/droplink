@@ -1,12 +1,16 @@
-import { UploadPasswordModal } from "./components/UploadPasswordModal";
+import { UploadPasswordModal } from "./components/UploadModal";
 import { encryptFile } from "./utils/cryptoUtils" 
 import React, { useState, useRef } from "react";
+import { CopyClick } from "./components/CopyClick"
+import Header from "./components/Header"
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [downloadLink, setDownloadLink] = useState("");
+  const [encryptedFileName, setEncryptedFileName] = useState("");
+
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
@@ -15,6 +19,7 @@ export default function App() {
   };
 
   const onUploadClick = () => {
+    console.log('Upload button clicked');
     if (!file) return;
     setShowPasswordModal(true);
   };
@@ -26,7 +31,6 @@ export default function App() {
     try {
       const encryptedBlob = await encryptFile(file, password);
 
-      // Create form data and upload
       const formData = new FormData();
       formData.append("file", encryptedBlob, file.name + ".enc");
 
@@ -36,8 +40,14 @@ export default function App() {
       });
 
       const json = await res.json();
-
+      
+      function getFileNameFromUrl(url: string): string {
+        const pathname = new URL(url).pathname;
+        return pathname.substring(pathname.lastIndexOf('/') + 1);
+      }
       if (json.download_url) {
+        const encFileName = getFileNameFromUrl(json.download_url)
+        setEncryptedFileName(encFileName)
         const frontendBaseUrl = window.location.origin; // e.g. http://localhost:3000
         const decryptLink = `${frontendBaseUrl}/decrypt?url=${encodeURIComponent(json.download_url)}`;
         setDownloadLink(decryptLink);
@@ -79,39 +89,66 @@ export default function App() {
   }
 
   return (
-    <div className="container">
-      <div>
-        <p>End-to-End Encrypted file sharing service</p>
-        <input 
-          type="file" 
-          ref={fileInputRef}
-          className={isDragOver ? "dragover" : ""}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onChange={onFileChange}
-        />
-        {file && <p>Selected: {file.name}</p>}
-        <button disabled={!file || uploading} onClick={onUploadClick}>
-          {uploading ? "Uploading..." : "Encrypt"}
-        </button>
+    <div className="page-container">
+      <Header />
+      <>
+        <div className="container">
+          <div className="file-preview-wrapper">
+            <label htmlFor="file-upload" className="custom-file-upload">
+              Browse
+            </label>
+            <input 
+              id="file-upload"
+              type="file" 
+              ref={fileInputRef}
+              className={isDragOver ? "dragover hidden-input" : "hidden-input"}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onChange={onFileChange}
+            />
 
-        {showPasswordModal && (
-          <UploadPasswordModal
-            onConfirm={uploadEncryptedFile}
-            onCancel={() => setShowPasswordModal(false)}
-          />
-        )}
+            {/* Show selected file name, if any */}
+            {file && (
+              <span className="selected-file-name">{file.name}</span>
+            )}
 
-        {downloadLink && (
-          <p>
-            Download Link: <br />
-            <a href={downloadLink} target="_blank" rel="noopener noreferrer">
-              {downloadLink}
-            </a>
-          </p>
-        )}
-      </div>
+            {file && (
+              <button onClick={onUploadClick} disabled={uploading}>
+                {uploading ? "Uploading..." : "Encrypt"}
+              </button>
+            )}
+
+
+            {showPasswordModal && (
+              <UploadPasswordModal
+                onConfirm={uploadEncryptedFile}
+                onCancel={() => setShowPasswordModal(false)}
+              />
+            )}
+
+            {downloadLink && (
+              <>
+                {file && encryptedFileName && (
+                  <div className="filename-label-container">
+                    <label className="filename-label-og">
+                      <strong>{file.name}</strong>
+                    </label>
+                    <label className="filename-label-arrow"> → </label>
+                    <label className="filename-label-enc">
+                      <strong>{encryptedFileName}</strong>
+                    </label>
+                  </div>
+                )}
+
+                <div className="mt-4">
+                  <CopyClick  downloadUrl={downloadLink}/>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </>
     </div>
   );
 }

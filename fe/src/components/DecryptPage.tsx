@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { PasswordPromptModal } from "./PasswordPromptModal";
+import { PasswordPromptModal } from "./DownloadModal";
 import { deriveKey } from "../utils/cryptoUtils";
 
 export default function DecryptPage() {
@@ -77,11 +77,16 @@ export default function DecryptPage() {
       {message && <p>{message}</p>}
 
       {fileUrl && (
-        <PasswordPromptModal
-          triesLeft={triesLeft}
-          disabled={disabled}
-          onSubmit={attemptDecrypt}
-        />
+        <>
+          <p className="filename-label">
+            {decodeURIComponent(fileUrl.split("/").pop() || "download").replace(/\.enc$/, "")}
+          </p>
+          <PasswordPromptModal
+            triesLeft={triesLeft}
+            disabled={disabled}
+            onSubmit={attemptDecrypt}
+          />
+        </>
       )}
     </div>
   );

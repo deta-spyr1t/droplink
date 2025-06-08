@@ -12,13 +12,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/rs/cors"
 )
 
 const (
-	finalDir   = "/var/encrypted_files"
-	uploadDir  = "./uploads"
-	publicDir  = "./public"
-	serverPort = ":8080"
+	uploadDir     = "/tmp/uploads"
+	publicDir     = "/tmp/public"
+	serverPort    = ":8080"
+	frontEndpoint = "http://localhost:3000"
+	verbose       = false
 )
 
 type UploadResponse struct {
@@ -27,6 +30,19 @@ type UploadResponse struct {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
+
+	// Get IP address (considering proxy headers too)
+	ip := r.Header.Get("X-Real-IP")
+	if ip == "" {
+		ip = r.Header.Get("X-Forwarded-For")
+	}
+	if ip == "" {
+		ip = r.RemoteAddr
+	}
+
+	// Get User-Agent
+	userAgent := r.UserAgent()
+
 	// Limit request size
 	r.Body = http.MaxBytesReader(w, r.Body, 200<<30) // 2GB
 
@@ -88,27 +104,44 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	fileHash := hex.EncodeToString(hash.Sum(nil))
 	downloadURL := fmt.Sprintf("http://%s/download/%s", r.Host, uniqueName)
 
-	log.Printf("Uploaded %s, hash=%s", uniqueName, fileHash)
-
+	//Log more data
+	if verbose {
+		log.Printf("\nUploaded: %s\nIP: %s\nUser Agent: %s\nFile Hash: %s", uniqueName, ip, userAgent, fileHash)
+	} else {
+		log.Printf("\nUploaded: %s\nFile Hash: %s", uniqueName, fileHash)
+	}
 	resp := UploadResponse{
 		DownloadURL: downloadURL,
 		Hash:        fileHash,
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", frontEndpoint)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	json.NewEncoder(w).Encode(resp)
 }
 
 func main() {
+	mux := http.NewServeMux()
+
 	// Ensure folders exist
 	os.MkdirAll(uploadDir, 0755)
 	os.MkdirAll(publicDir, 0755)
 
-	http.HandleFunc("/upload", uploadHandler)
+	mux.HandleFunc("/upload", uploadHandler)
 
 	// Serve static files from /public via /download/
 	fs := http.StripPrefix("/download/", http.FileServer(http.Dir(publicDir)))
-	http.Handle("/download/", fs)
+	mux.Handle("/download/", fs)
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(mux)
 
 	log.Printf("Server listening on http://localhost%s", serverPort)
-	log.Fatal(http.ListenAndServe(serverPort, nil))
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
