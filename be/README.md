@@ -19,6 +19,15 @@ go run main.go
 
 ## Docker
 
-``` bash title="/be (Local storage)"
-docker run -p 8080:8080 droplink-be
+1. Build
+``` bash title="/be BUILD"
+docker buildx build --network=host -t droplink-be . 
+```
+2. Run
+``` bash title="/be RUN"
+docker run \
+    -p $HOST_PORT:80 \
+    -v $(pwd)/uploads:/app/uploads \
+    -v $(pwd)/public:/app/public
+    droplink-be
 ```
