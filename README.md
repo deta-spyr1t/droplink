@@ -7,19 +7,19 @@ A modern, minimalistic and secure file sharing app with end-to-end encryption. B
 - 🔐 **Zero-Knowledge** – Client-side file encryption, ensuring only the recipient can decrypt them.
 - 🔑 **Password-based** – Encrypt and Decrypt files with custom password
 - ⚡ **No Sign-Up Required** – Share files instantly without creating an account.
-- 📁 **Cloud-agnostic** – Self-host it or simply deploy it to a Cloud Provider.
+- 📁 **Cloud-agnostic (WIP)** – Self-host it or simply deploy it to a Cloud Provider.
 - 🧩 **Minimalistic Design** – Clean, fast, and intuitive interface built with React and TypeScript.
-- 🐳 **Containerized** – Easily deployable backend and frontend with Docker.
-- ⏳ **Expiration Support** – Set time-based expiration for shared files.
+- 🐳 **Containerized (WIP)** – Easily deployable backend and frontend with Docker.
+- ⏳ **Expiration Support (WIP)** – Set time-based expiration for shared files.
 
 
 ## Components
 
-### Backend (Docker/Golang) 🖥️
-TBD
+### Backend (Golang) 🖥️
+[Start Backend](./be/README.md)
 
-### Frontend (Docker/Typescript) 🧑‍💻
-TBD
+### Frontend (Typescript/React/Vite) 🧑‍💻
+[Start Frontend](./fe/README.md)
 
 ## File structure 🗂️
 ```
@@ -37,7 +37,7 @@ droplink/
 │   └── src/ 
 ├── infra/                  // Infra
 │   ├── terraform/
-│   └── resources/   
+│   └── k8s/   
 ├── LICENSE
 └── README.md
 ```
