@@ -31,7 +31,6 @@ type UploadResponse struct {
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Get IP address (considering proxy headers too)
 	ip := r.Header.Get("X-Real-IP")
 	if ip == "" {
 		ip = r.Header.Get("X-Forwarded-For")
@@ -40,7 +39,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		ip = r.RemoteAddr
 	}
 
-	// Get User-Agent
 	userAgent := r.UserAgent()
 
 	// Limit request size
@@ -61,7 +59,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Generate unique filename
 	ext := filepath.Ext(handler.Filename)
 	b := make([]byte, 12) // 12 bytes = 16 chars base64url
 	_, err = rand.Read(b)
@@ -74,7 +71,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	tmpPath := filepath.Join(uploadDir, uniqueName)
 	publicPath := filepath.Join(publicDir, uniqueName)
 
-	// Create temp file and hash
 	outFile, err := os.Create(tmpPath)
 	if err != nil {
 		http.Error(w, "Unable to create file", http.StatusInternalServerError)
@@ -92,7 +88,6 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Move file to public dir
 	err = os.Rename(tmpPath, publicPath)
 	if err != nil {
 		http.Error(w, "File move error", http.StatusInternalServerError)
@@ -100,11 +95,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build response
 	fileHash := hex.EncodeToString(hash.Sum(nil))
 	downloadURL := fmt.Sprintf("http://%s/download/%s", r.Host, uniqueName)
 
-	//Log more data
 	if verbose {
 		log.Printf("\nUploaded: %s\nIP: %s\nUser Agent: %s\nFile Hash: %s", uniqueName, ip, userAgent, fileHash)
 	} else {
@@ -123,13 +116,11 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 
-	// Ensure folders exist
 	os.MkdirAll(uploadDir, 0755)
 	os.MkdirAll(publicDir, 0755)
 
 	mux.HandleFunc("/upload", uploadHandler)
 
-	// Serve static files from /public via /download/
 	fs := http.StripPrefix("/download/", http.FileServer(http.Dir(publicDir)))
 	mux.Handle("/download/", fs)
 
